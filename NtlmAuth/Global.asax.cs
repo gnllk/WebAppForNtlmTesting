@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -49,17 +50,16 @@ namespace NtlmAuth
                         // testing
                         var ddd = new NegotiationMessageShell(message, token);
 
-                        var size2 = Marshal.SizeOf(typeof(ChallengeMessage));
                         var msgType2 = new ChallengeMessage
                         {
-                            Flags = message.Flags,
-                            Nonce = Encoding.ASCII.GetBytes("23jdk5jU"),
+                            Flags = MessageFlag.NegotiateUnicode | MessageFlag.NegotiateNtlm | MessageFlag.NegotiateTargetInfo,
+                            Challenge = Encoding.ASCII.GetBytes("23jdk5jU"),
                             Protocol = message.Protocol,
-                            Type = 2,
-                            MessageLength = size2,
-                            FillZero = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }
+                            Type = MessageType.Challenge
                         };
 
+                        // Copy data
+                        var size2 = Marshal.SizeOf(typeof(ChallengeMessage));
                         var msgPtr2 = Marshal.AllocHGlobal(size2);
                         Marshal.StructureToPtr(msgType2, msgPtr2, true);
                         var bytes2 = new byte[size2];
@@ -86,6 +86,14 @@ namespace NtlmAuth
                     SendUnauthorized(Response);
                 }
             }
+        }
+
+        public static byte[] StringToByteArray(string hex)
+        {
+            return Enumerable.Range(0, hex.Length)
+                             .Where(x => x % 2 == 0)
+                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                             .ToArray();
         }
 
         private static void SendUnauthorized(HttpResponse response)

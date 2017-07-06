@@ -79,7 +79,9 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="NtlmMessage.cs" />
+    <Compile Include="NtlmMessageEnum.cs" />
+    <Compile Include="NtlmMessageShell.cs" />
+    <Compile Include="NtlmMessageStruct.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <PropertyGroup>
