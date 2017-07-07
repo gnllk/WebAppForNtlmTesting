@@ -33,7 +33,7 @@ namespace NtlmAuth
 
         public short TargetNameLength;
         public short TargetNameSpace;
-        public int TargetNametOffset;
+        public int TargetNameOffset;
 
         public MessageFlag Flags;
 

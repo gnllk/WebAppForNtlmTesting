@@ -55,10 +55,12 @@ namespace NtlmAuth
                             Type = MessageType.Challenge
                         };
 
-                        var message2 = new ChallengeMessageShell(challengeMessage);
-                        message2.SetTargetName("leo.com");
-                        message2.SetInfoDataContent("leo.com");
-                        message2.TargetInfo.Type = TargetInfoType.DnsDomainName;
+                        var message2 = new ChallengeMessageShell(challengeMessage)
+                        {
+                            TargetName = "leo.com",
+                            TargetInfoDataContent = "leo.com",
+                            TargetInfoType = TargetInfoType.DnsDomainName
+                        };
 
                         Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                         Response.ContentType = "text/html";

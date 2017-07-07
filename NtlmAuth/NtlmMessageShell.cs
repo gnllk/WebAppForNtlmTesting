@@ -34,8 +34,7 @@ namespace NtlmAuth
         {
             get
             {
-                var temp = new byte[_message.DomainNameLength];
-                Array.Copy(_messageBuffer, _message.DomainNameOffset, temp, 0, _message.DomainNameLength);
+                var temp = _messageBuffer.NewCopy(_message.DomainNameOffset, _message.DomainNameLength);
                 return Encoding.ASCII.GetString(temp);
             }
         }
@@ -44,8 +43,7 @@ namespace NtlmAuth
         {
             get
             {
-                var temp = new byte[_message.HostNameLength];
-                Array.Copy(_messageBuffer, _message.HostNameOffset, temp, 0, _message.HostNameLength);
+                var temp = _messageBuffer.NewCopy(_message.HostNameOffset, _message.HostNameLength);
                 return Encoding.ASCII.GetString(temp);
             }
         }
@@ -118,29 +116,43 @@ namespace NtlmAuth
         {
         }
 
-        public void SetTargetName(string name, Encoding encoding = null)
+        public ChallengeMessageShell(byte[] buffer)
         {
-            if (encoding == null)
-            {
-                encoding = GetEncoding();
-            }
+            var message = buffer.ToStruct<ChallengeMessage>();
+            var targetNameData = buffer.NewCopy(message.TargetNameOffset, message.TargetNameLength);
+            var targetInfoData = buffer.NewCopy(message.TargetInfoOffset, message.TargetInfoLength);
+            var targetInfo = targetInfoData.ToStruct<TargetInfo>();
+            var targetInfoDataContent = targetInfoData.NewCopy(Marshal.SizeOf(typeof(TargetInfo)));
 
-            TargetNameData = encoding.GetBytes(name);
+            Message = message;
+            TargetInfo = targetInfo;
+            TargetNameData = targetNameData;
+            TargetInfoData = targetInfoDataContent;
+
+            Rectify();
         }
 
-        public void SetInfoDataContent(string content, Encoding encoding = null)
+        public string TargetName
         {
-            if (encoding == null)
-            {
-                encoding = GetEncoding();
-            }
-            TargetInfoData = encoding.GetBytes(content);
+            get { return GetEncoding().GetString(TargetNameData); }
+            set { TargetNameData = GetEncoding().GetBytes(value); }
+        }
+
+        public string TargetInfoDataContent
+        {
+            get { return GetEncoding().GetString(TargetInfoData); }
+            set { TargetInfoData = GetEncoding().GetBytes(value); }
+        }
+
+        public TargetInfoType TargetInfoType
+        {
+            get { return TargetInfo.Type; }
+            set { TargetInfo.Type = value; }
         }
 
         public Encoding GetEncoding()
         {
-            const MessageFlag supportedFlag = MessageFlag.NegotiateUnicode | MessageFlag.NegotiateOem;
-            return (Message.Flags & supportedFlag) > 0 ? Encoding.Unicode : Encoding.ASCII;
+            return (Message.Flags & MessageFlag.NegotiateUnicode) > 0 ? Encoding.Unicode : Encoding.ASCII;
         }
 
         public byte[] ToBytes()
@@ -177,8 +189,8 @@ namespace NtlmAuth
             Message.TargetInfoSpace = (short)(dataLength + targetInfoLength);
 
             // targart offset
-            Message.TargetNametOffset = Marshal.SizeOf(typeof(ChallengeMessage));
-            Message.TargetInfoOffset = Message.TargetNametOffset + Message.TargetNameLength;
+            Message.TargetNameOffset = Marshal.SizeOf(typeof(ChallengeMessage));
+            Message.TargetInfoOffset = Message.TargetNameOffset + Message.TargetNameLength;
         }
     }
 
@@ -203,8 +215,7 @@ namespace NtlmAuth
 
         public Encoding GetEncoding()
         {
-            const MessageFlag supportedFlag = MessageFlag.NegotiateUnicode | MessageFlag.NegotiateOem;
-            return (_message.Flags & supportedFlag) > 0 ? Encoding.Unicode : Encoding.ASCII;
+            return (_message.Flags & MessageFlag.NegotiateUnicode) > 0 ? Encoding.Unicode : Encoding.ASCII;
         }
 
         public string Protocol => Encoding.ASCII.GetString(_message.Protocol);
