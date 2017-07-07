@@ -82,6 +82,7 @@
     <Compile Include="NtlmMessageEnum.cs" />
     <Compile Include="NtlmMessageShell.cs" />
     <Compile Include="NtlmMessageStruct.cs" />
+    <Compile Include="NtlmMessageStructExtention.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <PropertyGroup>

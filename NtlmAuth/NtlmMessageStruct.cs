@@ -88,5 +88,10 @@ namespace NtlmAuth
         public int SessionKeyOffset;
 
         public MessageFlag Flags;
+
+        public byte OsMajorVersion;
+        public byte OsMinorVersion;
+        public short OsBuildNumber;
+        public int OsReserved;
     }
 }

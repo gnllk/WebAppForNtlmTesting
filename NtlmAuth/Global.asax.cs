@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Web;
 
@@ -9,6 +8,11 @@ namespace NtlmAuth
 {
     public class Global : HttpApplication
     {
+        private const MessageFlag SupportedMessageFlag =
+            MessageFlag.NegotiateUnicode |
+            MessageFlag.NegotiateNtlm |
+            MessageFlag.TargetTypeDomain |
+            MessageFlag.NegotiateTargetInfo;
 
         protected void Application_Start(object sender, EventArgs e)
         {
@@ -40,45 +44,31 @@ namespace NtlmAuth
                     var token = Convert.FromBase64String(base64);
                     if (token[8] == 1)
                     {
-                        // message type 1
-                        var size = Marshal.SizeOf(typeof(NegotiationMessage));
-                        var msgPtr = Marshal.AllocHGlobal(size);
-                        Marshal.Copy(token, 0, msgPtr, size);
-                        var message = Marshal.PtrToStructure<NegotiationMessage>(msgPtr);
-                        Marshal.FreeHGlobal(msgPtr);
+                        // negotiation message
+                        var message1 = new NegotiationMessageShell(token);
 
-                        // testing
-                        var ddd = new NegotiationMessageShell(message, token);
-
-                        var msgType2 = new ChallengeMessage
+                        var challengeMessage = new ChallengeMessage
                         {
-                            Flags = MessageFlag.NegotiateUnicode | MessageFlag.NegotiateNtlm | MessageFlag.NegotiateTargetInfo,
-                            Challenge = Encoding.ASCII.GetBytes("23jdk5jU"),
-                            Protocol = message.Protocol,
+                            Flags = SupportedMessageFlag & message1.Flags,
+                            Challenge = Encoding.ASCII.GetBytes("12345678"),
+                            Protocol = message1.Message.Protocol,
                             Type = MessageType.Challenge
                         };
 
-                        // Copy data
-                        var size2 = Marshal.SizeOf(typeof(ChallengeMessage));
-                        var msgPtr2 = Marshal.AllocHGlobal(size2);
-                        Marshal.StructureToPtr(msgType2, msgPtr2, true);
-                        var bytes2 = new byte[size2];
-                        Marshal.Copy(msgPtr2, bytes2, 0, size2);
-                        Marshal.FreeHGlobal(msgPtr2);
+                        var message2 = new ChallengeMessageShell(challengeMessage);
+                        message2.SetTargetName("leo.com");
+                        message2.SetInfoDataContent("leo.com");
+                        message2.TargetInfo.Type = TargetInfoType.DnsDomainName;
 
                         Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                         Response.ContentType = "text/html";
-                        Response.Headers.Add("WWW-Authenticate", $"NTLM {Convert.ToBase64String(bytes2)}");
+                        Response.Headers.Add("WWW-Authenticate", $"NTLM {Convert.ToBase64String(message2.ToBytes())}");
                         Response.Write(Encoding.ASCII.GetBytes("Unauthorized"));
                     }
                     else if (token[8] == 3)
                     {
                         // message type 3
-                        var size = Marshal.SizeOf(typeof(AuthenticationMessage));
-                        var msgPtr = Marshal.AllocHGlobal(size);
-                        Marshal.Copy(token, 0, msgPtr, size);
-                        var message = Marshal.PtrToStructure<AuthenticationMessage>(msgPtr);
-                        Marshal.FreeHGlobal(msgPtr);
+                        var message3 = new AuthenticationMessageShell(token);
                     }
                 }
                 else
