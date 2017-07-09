@@ -10,7 +10,7 @@ namespace NtlmAuth.Tests
         public void TestEncryptAndDecrypt()
         {
             var key = Encoding.ASCII.GetBytes("12345678");
-            var content = "hello world!";
+            var content = "12345678";
 
             var cipheredData = DesHelper.Encrypt(Encoding.ASCII.GetBytes(content), key);
 

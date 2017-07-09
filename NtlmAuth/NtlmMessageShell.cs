@@ -47,20 +47,6 @@ namespace NtlmAuth
                 return Encoding.ASCII.GetString(temp);
             }
         }
-
-        public MessageFlag[] SupportedFlags
-        {
-            get
-            {
-                var result = new List<MessageFlag>();
-                foreach (var item in Enum.GetValues(typeof(MessageFlag)))
-                {
-                    if (((uint)item & (uint)_message.Flags) > 0)
-                        result.Add((MessageFlag)item);
-                }
-                return result.ToArray();
-            }
-        }
     }
 
     public class ChallengeMessageShell
@@ -174,6 +160,21 @@ namespace NtlmAuth
             return result.ToArray();
         }
 
+        public byte[] GetTargetInfo()
+        {
+            Rectify();
+
+            var result = new List<byte>();
+
+            if (Message.TargetInfoLength > 0)
+                result.AddRange(TargetInfo.ToBytes());
+
+            if (Message.TargetInfoLength > 0)
+                result.AddRange(TargetInfoData);
+
+            return result.ToArray();
+        }
+
         public void Rectify()
         {
             // target name
@@ -268,39 +269,25 @@ namespace NtlmAuth
             }
         }
 
-        public byte[] LanManagerResponseData
+        public byte[] LmResponseData
         {
             get
             {
-                var temp = new byte[_message.LanManagerResponseLength];
-                Array.Copy(_messageBuffer, _message.LanManagerResponseOffset,
-                    temp, 0, _message.LanManagerResponseLength);
+                var temp = new byte[_message.LmResponseLength];
+                Array.Copy(_messageBuffer, _message.LmResponseOffset,
+                    temp, 0, _message.LmResponseLength);
                 return temp;
             }
         }
 
-        public byte[] NtlmManagerResponseData
+        public byte[] NtlmResponseData
         {
             get
             {
-                var temp = new byte[_message.NtlmManagerResponseLength];
-                Array.Copy(_messageBuffer, _message.NtlmManagerResponseOffset,
-                    temp, 0, _message.NtlmManagerResponseLength);
+                var temp = new byte[_message.NtlmResponseLength];
+                Array.Copy(_messageBuffer, _message.NtlmResponseOffset,
+                    temp, 0, _message.NtlmResponseLength);
                 return temp;
-            }
-        }
-
-        public MessageFlag[] SupportedFlags
-        {
-            get
-            {
-                var result = new List<MessageFlag>();
-                foreach (var item in Enum.GetValues(typeof(MessageFlag)))
-                {
-                    if (((uint)item & (uint)_message.Flags) > 0)
-                        result.Add((MessageFlag)item);
-                }
-                return result.ToArray();
             }
         }
     }

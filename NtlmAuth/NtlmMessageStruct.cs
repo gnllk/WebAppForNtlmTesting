@@ -63,13 +63,13 @@ namespace NtlmAuth
         public byte[] Protocol;
         public MessageType Type;
 
-        public short LanManagerResponseLength;
-        public short LanManagerResponseSpace;
-        public int LanManagerResponseOffset;
+        public short LmResponseLength;
+        public short LmResponseSpace;
+        public int LmResponseOffset;
 
-        public short NtlmManagerResponseLength;
-        public short NtlmManagerResponseSpace;
-        public int NtlmManagerResponseOffset;
+        public short NtlmResponseLength;
+        public short NtlmResponseSpace;
+        public int NtlmResponseOffset;
 
         public short TargetNameLength;
         public short TargetNameSpace;

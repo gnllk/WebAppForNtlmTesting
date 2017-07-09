@@ -51,6 +51,8 @@
   </Choose>
   <ItemGroup>
     <Compile Include="DesHelperTest.cs" />
+    <Compile Include="JavaResponsesTest.cs" />
+    <Compile Include="LmResponseTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

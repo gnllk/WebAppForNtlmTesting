@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace NtlmAuth
@@ -8,6 +9,10 @@ namespace NtlmAuth
     public interface INtlmResponse
     {
         bool Validate();
+    }
+
+    public abstract class NtlmResponseBase
+    {
     }
 
     public class LmResponse : INtlmResponse
@@ -48,8 +53,8 @@ namespace NtlmAuth
         {
             if (!ResponseData.Any()) return false;
             if (IsIgnore()) return false;
-
-            return CreateLmResponse(Challenge, Password).SequenceEqual(ResponseData);
+            var bytes = CreateLmResponse(Challenge, Password);
+            return bytes.SequenceEqual(ResponseData);
         }
 
         private bool IsIgnore()
@@ -59,7 +64,7 @@ namespace NtlmAuth
 
         public virtual byte[] CreateLmResponse(byte[] challenge, byte[] password)
         {
-            //
+            // KGS encript
             var maxPasswordLength = 14;
             var paddedPassword = password.PadRight(maxPasswordLength);
 
@@ -69,12 +74,12 @@ namespace NtlmAuth
             var desParityKey1 = ParityAdjust(key1);
             var desParityKey2 = ParityAdjust(key2);
 
-            var kgsCiphered1 = DesHelper.Decrypt(Kgs, desParityKey1);
-            var kgsCiphered2 = DesHelper.Decrypt(Kgs, desParityKey2);
-             
+            var kgsCiphered1 = DesHelper.Encrypt(Kgs, desParityKey1);
+            var kgsCiphered2 = DesHelper.Encrypt(Kgs, desParityKey2);
+
             var lmHash = kgsCiphered1.Concat(kgsCiphered2).ToArray();
 
-            // 
+            // Challege encript
             var maxLmHashLength = 21;
             var paddedLmHash = lmHash.PadRight(maxLmHashLength);
 
@@ -86,54 +91,62 @@ namespace NtlmAuth
             var kgsParitykey2 = ParityAdjust(kgskey2);
             var kgsParitykey3 = ParityAdjust(kgskey3);
 
+            var challengeCiphered1 = DesHelper.Encrypt(challenge, kgsParitykey1);
+            var challengeCiphered2 = DesHelper.Encrypt(challenge, kgsParitykey2);
+            var challengeCiphered3 = DesHelper.Encrypt(challenge, kgsParitykey3);
 
-            return null;
+            return challengeCiphered1.Concat(challengeCiphered2).Concat(challengeCiphered3).ToArray();
         }
 
-        private byte[] ParityAdjust(byte[] data)
+        protected byte[] ParityAdjust(byte[] data)
         {
-            var bitList = new List<bool>(56);
+            var bitList = new List<int>(56);
             foreach (var item in data)
             {
-                byte mask = 1;
-                for (byte i = 0; i < 8; i++)
+                byte mask = 0x80;// binary: 1000 0000
+                for (var i = 0; i < 8; i++)
                 {
-                    mask <<= i;
-                    bitList.Add((mask & item) > 0);
+                    bitList.Add((mask & item) > 0 ? 1 : 0);
+                    mask >>= 1;
                 }
             }
             var result = new List<byte>(8);
-            var eightBits = new bool[8];
+            var eightBits = new int[8];
             var parityCounter = 0;
+            var bitCounter = 0;
             for (var i = 0; i < bitList.Count; i++)
             {
+                bitCounter++;
                 eightBits[i % 7] = bitList[i];
-                if (bitList[i])
+                if (bitList[i] == 1)
                 {
                     parityCounter++;
                 }
-                if (i > 0 && i % 7 == 0)
+                if (bitCounter == 7)
                 {
-                    eightBits[7] = parityCounter % 2 == 0;
-                    result.Add(CompositeAsByte(eightBits));
+                    eightBits[7] = parityCounter % 2 == 0 ? 1 : 0;
+                    parityCounter = 0;
+                    bitCounter = 0;
+                    result.Add(BitsToByte(eightBits));
                 }
             }
             return result.ToArray();
         }
 
-        private byte CompositeAsByte(bool[] eightBits)
+        protected byte BitsToByte(int[] eightBits)
         {
             if (eightBits == null)
                 throw new ArgumentNullException(nameof(eightBits));
 
             byte mask = 0x80;// binary: 1000 0000
-            byte index = 0;
             byte result = 0;
             foreach (var bit in eightBits)
             {
-                mask >>= index++;
-                if (!bit) continue;
-                result |= mask;
+                if (bit == 1)
+                {
+                    result |= mask;
+                }
+                mask >>= 1;
             }
             return result;
         }

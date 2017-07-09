@@ -81,12 +81,14 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="HexHelper.cs" />
+    <Compile Include="MD4.cs" />
     <Compile Include="NtlmMessageEnum.cs" />
     <Compile Include="NtlmMessageShell.cs" />
     <Compile Include="NtlmMessageStruct.cs" />
     <Compile Include="NtlmMessageStructExtention.cs" />
     <Compile Include="NtlmResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="JavaResponses.cs" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

@@ -10,7 +10,8 @@ namespace NtlmAuth
             using (var des = new DESCryptoServiceProvider())
             {
                 des.Key = key;
-                des.IV = key;
+                des.Mode = CipherMode.ECB;
+                des.Padding = PaddingMode.None;
                 using (var ms = new MemoryStream())
                 {
                     using (var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write))
@@ -29,7 +30,8 @@ namespace NtlmAuth
             using (var des = new DESCryptoServiceProvider())
             {
                 des.Key = key;
-                des.IV = key;
+                des.Mode = CipherMode.ECB;
+                des.Padding = PaddingMode.None;
                 using (var ms = new MemoryStream())
                 {
                     using (var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write))
