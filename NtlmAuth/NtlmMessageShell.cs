@@ -51,31 +51,47 @@ namespace NtlmAuth
 
     public class ChallengeMessageShell
     {
-        private byte[] _targetNameData;
+        private byte[] _targetNameBytes;
 
-        private byte[] _targetInfoData;
+        private byte[] _targetInfoContentBytes;
 
         public ChallengeMessage Message;
 
-        public byte[] TargetNameData
+        public TargetInfo TargetInfo;
+
+        public byte[] TargetNameBytes
         {
-            get { return _targetNameData ?? (_targetNameData = new byte[0]); }
+            get { return _targetNameBytes ?? (_targetNameBytes = new byte[0]); }
             set
             {
-                _targetNameData = value;
+                _targetNameBytes = value;
                 Rectify();
             }
         }
 
-        public TargetInfo TargetInfo;
-
-        public byte[] TargetInfoData
+        public byte[] TargetInfoContentBytes
         {
-            get { return _targetInfoData ?? (_targetInfoData = new byte[0]); }
+            get { return _targetInfoContentBytes ?? (_targetInfoContentBytes = new byte[0]); }
             set
             {
-                _targetInfoData = value;
+                _targetInfoContentBytes = value;
                 Rectify();
+            }
+        }
+
+        public byte[] TargetInfoBytes
+        {
+            get
+            {
+                Rectify();
+
+                var result = new List<byte>();
+                if (Message.TargetInfoLength > 0)
+                {
+                    result.AddRange(TargetInfo.ToBytes());
+                    result.AddRange(TargetInfoContentBytes);
+                }
+                return result.ToArray();
             }
         }
 
@@ -112,22 +128,22 @@ namespace NtlmAuth
 
             Message = message;
             TargetInfo = targetInfo;
-            TargetNameData = targetNameData;
-            TargetInfoData = targetInfoDataContent;
+            TargetNameBytes = targetNameData;
+            TargetInfoContentBytes = targetInfoDataContent;
 
             Rectify();
         }
 
         public string TargetName
         {
-            get { return GetEncoding().GetString(TargetNameData); }
-            set { TargetNameData = GetEncoding().GetBytes(value); }
+            get { return GetEncoding().GetString(TargetNameBytes); }
+            set { TargetNameBytes = GetEncoding().GetBytes(value); }
         }
 
         public string TargetInfoDataContent
         {
-            get { return GetEncoding().GetString(TargetInfoData); }
-            set { TargetInfoData = GetEncoding().GetBytes(value); }
+            get { return GetEncoding().GetString(TargetInfoContentBytes); }
+            set { TargetInfoContentBytes = GetEncoding().GetBytes(value); }
         }
 
         public TargetInfoType TargetInfoType
@@ -149,28 +165,10 @@ namespace NtlmAuth
             result.AddRange(Message.ToBytes());
 
             if (Message.TargetNameLength > 0)
-                result.AddRange(TargetNameData);
+                result.AddRange(TargetNameBytes);
 
             if (Message.TargetInfoLength > 0)
-                result.AddRange(TargetInfo.ToBytes());
-
-            if (Message.TargetInfoLength > 0)
-                result.AddRange(TargetInfoData);
-
-            return result.ToArray();
-        }
-
-        public byte[] GetTargetInfo()
-        {
-            Rectify();
-
-            var result = new List<byte>();
-
-            if (Message.TargetInfoLength > 0)
-                result.AddRange(TargetInfo.ToBytes());
-
-            if (Message.TargetInfoLength > 0)
-                result.AddRange(TargetInfoData);
+                result.AddRange(TargetInfoBytes);
 
             return result.ToArray();
         }
@@ -178,18 +176,18 @@ namespace NtlmAuth
         public void Rectify()
         {
             // target name
-            var nameLength = _targetNameData?.Length ?? 0;
+            var nameLength = _targetNameBytes?.Length ?? 0;
             Message.TargetNameLength = (short)nameLength;
             Message.TargetNameSpace = (short)nameLength;
 
             // target info
-            var dataLength = _targetInfoData?.Length ?? 0;
-            var targetInfoLength = Marshal.SizeOf(typeof(TargetInfo));
-            TargetInfo.Length = (short)dataLength;
-            Message.TargetInfoLength = (short)(dataLength + targetInfoLength);
-            Message.TargetInfoSpace = (short)(dataLength + targetInfoLength);
+            var contentLength = _targetInfoContentBytes?.Length ?? 0;
+            var targetInfoStructLength = Marshal.SizeOf(typeof(TargetInfo));
+            TargetInfo.Length = (short)contentLength;
+            Message.TargetInfoLength = (short)(contentLength + targetInfoStructLength);
+            Message.TargetInfoSpace = (short)(contentLength + targetInfoStructLength);
 
-            // targart offset
+            // offset
             Message.TargetNameOffset = Marshal.SizeOf(typeof(ChallengeMessage));
             Message.TargetInfoOffset = Message.TargetNameOffset + Message.TargetNameLength;
         }
