@@ -10,7 +10,10 @@ namespace NtlmAuth
     {
         private const MessageFlag SupportedMessageFlag =
             MessageFlag.NegotiateUnicode |
-            MessageFlag.NegotiateNtlm;
+            MessageFlag.NegotiateNtlm |
+            MessageFlag.TargetTypeDomain |
+            MessageFlag.NegotiateTargetInfo
+            ;
 
         protected void Application_Start(object sender, EventArgs e)
         {
@@ -67,40 +70,35 @@ namespace NtlmAuth
                     }
                     else if (token[8] == 3)
                     {
-                        // message type 3
+                        var domainName = "leo.com";
+                        var password = "123456789";
+                        var challenge = Encoding.ASCII.GetBytes("12345678");
+
                         var message3 = new AuthenticationMessageShell(token);
+                        var hexExpectNtlmRes = message3.NtlmResponseData.BytesToHex();
 
-                        var response = new LmResponse(message3.LmResponseData, "12345678", "jackjackjack");
-                        //var result = response.Validate();
-
-                        var requestNtmlRes = HexHelper.BytesToHex(message3.NtlmResponseData);
-
-                        var ntlmRes1 = JavaResponses.GetNTLMResponse("jackjackjack", Encoding.ASCII.GetBytes("12345678"));
-                        var ntmlHex1 = HexHelper.BytesToHex(ntlmRes1);
-
-
-
-                        var challengeMessage = new ChallengeMessage
+                        if (message3.Message.NtlmResponseLength == 24)
                         {
-                            Flags = SupportedMessageFlag & message3.Flags,
-                            Challenge = Encoding.ASCII.GetBytes("12345678"),
-                            Protocol = message3.Message.Protocol,
-                            Type = MessageType.Challenge
-                        };
-
-                        var message2 = new ChallengeMessageShell(challengeMessage)
+                            var hexNtlmRes = JavaResponses.GetNtlmResponse(password, challenge).BytesToHex();
+                            if (!hexExpectNtlmRes.Equals(hexNtlmRes, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                SendUnauthorized(Response);
+                            }
+                        }
+                        else
                         {
-                            TargetName = "leo.com",
-                            TargetInfoDataContent = "leo.com",
-                            TargetInfoType = TargetInfoType.DnsDomainName
-                        };
+                            var expectHmac = message3.NtlmResponseData.NewCopy(0, 16);
+                            var expectBlob = message3.NtlmResponseData.NewCopy(16);
+                            var hexExpectHmac = expectHmac.BytesToHex();
 
+                            var actualHmac = JavaResponses.GetNtlmV2ResponseHash(domainName, message3.UserName, password, expectBlob, challenge);
+                            var hexActualHmac = actualHmac.BytesToHex();
 
-                        var ntlmRes2 = JavaResponses.GetNTLMv2Response("leo.com", "llk", "jackjackjack", message2.GetTargetInfo(), Encoding.ASCII.GetBytes("12345678"), Encoding.ASCII.GetBytes("12345678"));
-                        var ntmlHex2 = HexHelper.BytesToHex(ntlmRes2);
-
-                        var ntlmRes3 = JavaResponses.GetNTLM2SessionResponse("jackjackjack", Encoding.ASCII.GetBytes("12345678"), Encoding.ASCII.GetBytes("12345678"));
-                        var ntmlHex3 = HexHelper.BytesToHex(ntlmRes2);
+                            if (!hexExpectHmac.Equals(hexActualHmac, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                SendUnauthorized(Response);
+                            }
+                        }
                     }
                 }
                 else

@@ -34,7 +34,7 @@ namespace NtlmAuth
          *
          * @return The NTLM Response.
          */
-        public static byte[] GetNTLMResponse(string password, byte[] challenge)
+        public static byte[] GetNtlmResponse(string password, byte[] challenge)
         {
             byte[] ntlmHash = NtlmHash(password);
             return LmResponse(ntlmHash, challenge);
@@ -55,12 +55,19 @@ namespace NtlmAuth
          *
          * @return The NTLMv2 Response.
          */
-        public static byte[] GetNTLMv2Response(string target, string user,
-                string password, byte[] targetInformation, byte[] challenge, byte[] clientNonce)
+        public static byte[] GetNtlmV2Response(string target, string user, string password,
+            byte[] targetInformation, byte[] challenge, byte[] clientNonce, byte[] timestamp)
         {
             byte[] ntlmv2Hash = Ntlmv2Hash(target, user, password);
-            byte[] blob = CreateBlob(targetInformation, clientNonce);
+            byte[] blob = CreateBlob(targetInformation, clientNonce, timestamp);
             return Lmv2Response(ntlmv2Hash, blob, challenge);
+        }
+
+        public static byte[] GetNtlmV2ResponseHash(string target, string user, string password, 
+            byte[] blob, byte[] challenge)
+        {
+            byte[] ntlmv2Hash = Ntlmv2Hash(target, user, password);
+            return Lmv2ResponseHash(ntlmv2Hash, blob, challenge);
         }
 
         /**
@@ -76,7 +83,7 @@ namespace NtlmAuth
          *
          * @return The LMv2 Response. 
          */
-        public static byte[] GetLMv2Response(string target, string user,
+        public static byte[] GetLmV2Response(string target, string user,
                 string password, byte[] challenge, byte[] clientNonce)
         {
             byte[] ntlmv2Hash = Ntlmv2Hash(target, user, password);
@@ -95,7 +102,7 @@ namespace NtlmAuth
          * response field of the Type 3 message; the LM response field contains
          * the client nonce, null-padded to 24 bytes.
          */
-        public static byte[] GetNTLM2SessionResponse(string password, byte[] challenge, byte[] clientNonce)
+        public static byte[] GetNtlm2SessionResponse(string password, byte[] challenge, byte[] clientNonce)
         {
             byte[] ntlmHash = NtlmHash(password);
             var md5 = MD5.Create();
@@ -117,11 +124,11 @@ namespace NtlmAuth
         private static byte[] LmHash(string password)
         {
             byte[] oemPassword = Encoding.ASCII.GetBytes(password.ToUpperInvariant());
-            int Length = Math.Min(oemPassword.Length, 14);
+            int length = Math.Min(oemPassword.Length, 14);
             byte[] keyBytes = new byte[14];
-            Array.Copy(oemPassword, 0, keyBytes, 0, Length);
-            byte[] lowKey = CreateDESKey(keyBytes, 0);
-            byte[] highKey = CreateDESKey(keyBytes, 7);
+            Array.Copy(oemPassword, 0, keyBytes, 0, length);
+            byte[] lowKey = CreateDesKey(keyBytes, 0);
+            byte[] highKey = CreateDesKey(keyBytes, 7);
             byte[] magicConstant = Encoding.ASCII.GetBytes("KGS!@#$%");
             byte[] lowHash = DesHelper.Encrypt(magicConstant, lowKey);
             byte[] highHash = DesHelper.Encrypt(magicConstant, highKey);
@@ -159,7 +166,7 @@ namespace NtlmAuth
         {
             byte[] ntlmHash = NtlmHash(password);
             string identity = user.ToUpperInvariant() + target;
-            return HmacMD5(Encoding.Unicode.GetBytes(identity), ntlmHash);
+            return HmacMd5(Encoding.Unicode.GetBytes(identity), ntlmHash);
         }
 
         /**
@@ -176,9 +183,9 @@ namespace NtlmAuth
             byte[] keyBytes = new byte[21];
             Array.Copy(hash, 0, keyBytes, 0, 16);
 
-            byte[] lowKey = CreateDESKey(keyBytes, 0);
-            byte[] middleKey = CreateDESKey(keyBytes, 7);
-            byte[] highKey = CreateDESKey(keyBytes, 14);
+            byte[] lowKey = CreateDesKey(keyBytes, 0);
+            byte[] middleKey = CreateDesKey(keyBytes, 7);
+            byte[] highKey = CreateDesKey(keyBytes, 14);
 
             byte[] lowResponse = DesHelper.Encrypt(challenge, lowKey);
             byte[] middleResponse = DesHelper.Encrypt(challenge, middleKey);
@@ -207,11 +214,35 @@ namespace NtlmAuth
             byte[] data = new byte[challenge.Length + clientData.Length];
             Array.Copy(challenge, 0, data, 0, challenge.Length);
             Array.Copy(clientData, 0, data, challenge.Length, clientData.Length);
-            byte[] mac = HmacMD5(data, hash);
+            byte[] mac = HmacMd5(data, hash);
             byte[] lmv2Response = new byte[mac.Length + clientData.Length];
             Array.Copy(mac, 0, lmv2Response, 0, mac.Length);
             Array.Copy(clientData, 0, lmv2Response, mac.Length, clientData.Length);
             return lmv2Response;
+        }
+
+        private static byte[] Lmv2ResponseHash(byte[] hash, byte[] clientData, byte[] challenge)
+        {
+            byte[] data = new byte[challenge.Length + clientData.Length];
+            Array.Copy(challenge, 0, data, 0, challenge.Length);
+            Array.Copy(clientData, 0, data, challenge.Length, clientData.Length);
+            byte[] mac = HmacMd5(data, hash);
+            return mac;
+        }
+
+        public static byte[] GetNowTimestamp()
+        {
+            long time = (long)(DateTime.UtcNow - DateTime.Parse("1970-01-01T00:00:00Z")).TotalMilliseconds;
+            time += 11644473600000L; // milliseconds from January 1, 1601 -> epoch.
+            time *= 10000; // tenths of a microsecond.
+                           // convert to little-endian byte array.
+            byte[] timestamp = new byte[8];
+            for (int i = 0; i < 8; i++)
+            {
+                timestamp[i] = (byte)time;
+                time = time / (int)Math.Pow(2, 8);
+            }
+            return timestamp;
         }
 
         /**
@@ -224,29 +255,20 @@ namespace NtlmAuth
          *
          * @return The blob, used in the calculation of the NTLMv2 Response.
          */
-        private static byte[] CreateBlob(byte[] targetInformation, byte[] clientNonce)
+
+        private static byte[] CreateBlob(byte[] targetInformation, byte[] clientNonce, byte[] timestamp)
         {
-            byte[] blobSignature = new byte[] { 0x01, 0x01, 0x00, 0x00 };
-            byte[] reserved = new byte[] { 0x00, 0x00, 0x00, 0x00 };
-            byte[] unknown1 = new byte[] { 0x00, 0x00, 0x00, 0x00 };
-            byte[] unknown2 = new byte[] { 0x00, 0x00, 0x00, 0x00 };
+            byte[] blobSignature = { 0x01, 0x01, 0x00, 0x00 };
+            byte[] reserved = { 0x00, 0x00, 0x00, 0x00 };
+            byte[] unknown1 = { 0x00, 0x00, 0x00, 0x00 };
+            byte[] unknown2 = { 0x00, 0x00, 0x00, 0x00 };
 
-            long time = (long)(DateTime.UtcNow - DateTime.Parse("1970-01-01T00:00:00Z")).TotalMilliseconds;
-            time += 11644473600000L; // milliseconds from January 1, 1601 -> epoch.
-            time *= 10000; // tenths of a microsecond.
-                           // convert to little-endian byte array.
-            byte[] timestamp = new byte[8];
-            for (int i = 0; i < 8; i++)
-            {
-                timestamp[i] = (byte)time;
-                time = time / (int)Math.Pow(2, 8);
-            }
-            // TODO: Remove this
-            //timestamp = HexHelper.HexToBytes("0090d336b734c301");
-
-            byte[] blob = new byte[blobSignature.Length + reserved.Length +
-                                   timestamp.Length + clientNonce.Length +
-                                   unknown1.Length + targetInformation.Length +
+            byte[] blob = new byte[blobSignature.Length +
+                                   reserved.Length +
+                                   timestamp.Length +
+                                   clientNonce.Length +
+                                   unknown1.Length +
+                                   targetInformation.Length +
                                    unknown2.Length];
 
             int offset = 0;
@@ -275,14 +297,14 @@ namespace NtlmAuth
          *
          * @return The HMAC-MD5 hash of the given data.
          */
-        private static byte[] HmacMD5(byte[] data, byte[] key)
+        private static byte[] HmacMd5(byte[] data, byte[] key)
         {
             byte[] ipad = new byte[64];
             byte[] opad = new byte[64];
             for (int i = 0; i < 64; i++)
             {
-                ipad[i] = (byte)0x36;
-                opad[i] = (byte)0x5c;
+                ipad[i] = 0x36;
+                opad[i] = 0x5c;
             }
             for (int i = key.Length - 1; i >= 0; i--)
             {
@@ -310,7 +332,7 @@ namespace NtlmAuth
          * @return A DES encryption key created from the key material
          * starting at the specified offset in the given byte array.
          */
-        private static byte[] CreateDESKey(byte[] bytes, int offset)
+        private static byte[] CreateDesKey(byte[] bytes, int offset)
         {
             byte[] keyBytes = new byte[7];
             Array.Copy(bytes, offset, keyBytes, 0, 7);
@@ -343,11 +365,11 @@ namespace NtlmAuth
                                         (b / (int)Math.Pow(2, 1))) & 0x01) == 0;
                 if (needsParity)
                 {
-                    bytes[i] |= (byte)0x01;
+                    bytes[i] |= 0x01;
                 }
                 else
                 {
-                    bytes[i] &= (byte)0xfe;
+                    bytes[i] &= 0xfe;
                 }
             }
         }
