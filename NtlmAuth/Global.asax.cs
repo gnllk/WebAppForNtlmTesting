@@ -91,7 +91,7 @@ namespace NtlmAuth
                             var expectBlob = message3.NtlmResponseData.NewCopy(16);
                             var hexExpectHmac = expectHmac.BytesToHex();
 
-                            var actualHmac = JavaResponses.GetNtlmV2ResponseHash(domainName, message3.UserName, password, expectBlob, challenge);
+                            var actualHmac = JavaResponses.GetNtlmV2ResponseHash(message3.TargetName, message3.UserName, password, expectBlob, challenge);
                             var hexActualHmac = actualHmac.BytesToHex();
 
                             if (!hexExpectHmac.Equals(hexActualHmac, StringComparison.InvariantCultureIgnoreCase))
