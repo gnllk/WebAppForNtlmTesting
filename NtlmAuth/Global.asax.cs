@@ -3,6 +3,8 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web;
+using log4net;
+using log4net.Config;
 
 namespace NtlmAuth
 {
@@ -15,9 +17,12 @@ namespace NtlmAuth
             MessageFlag.NegotiateTargetInfo
             ;
 
+        private static readonly ILog Log = LogManager.GetLogger(typeof(Global));
+
         protected void Application_Start(object sender, EventArgs e)
         {
-
+            Log.Info("Application Start");
+            XmlConfigurator.Configure();
         }
 
         protected void Session_Start(object sender, EventArgs e)
@@ -27,6 +32,7 @@ namespace NtlmAuth
 
         protected void Application_BeginRequest(object sender, EventArgs e)
         {
+            Log.Info("Application BeginRequest");
             var auth = Request.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(auth))
             {
@@ -48,6 +54,10 @@ namespace NtlmAuth
                         // negotiation message
                         var message1 = new NegotiationMessageShell(token);
 
+                        Log.Info($"Message 1 Flags: {message1.Flags}");
+                        Log.Info($"Message 1 Domain: {message1.Domain}");
+                        Log.Info($"Message 1 Host: {message1.Host}");
+
                         var challengeMessage = new ChallengeMessage
                         {
                             Flags = SupportedMessageFlag & message1.Flags,
@@ -63,6 +73,10 @@ namespace NtlmAuth
                             TargetInfoType = TargetInfoType.DnsDomainName
                         };
 
+                        Log.Info($"Message 2 Flags: {message2.Flags}");
+                        Log.Info($"Message 2 TargetName: {message2.TargetName}");
+                        Log.Info($"Message 2 TargetInfo: {message2.TargetInfoDataContent}");
+
                         Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                         Response.ContentType = "text/html";
                         Response.Headers.Add("WWW-Authenticate", $"NTLM {Convert.ToBase64String(message2.ToBytes())}");
@@ -70,16 +84,21 @@ namespace NtlmAuth
                     }
                     else if (token[8] == 3)
                     {
-                        var domainName = "leo.com";
-                        var password = "123456789";
+                        var userName = "tom";
+                        var password = "123456";
                         var challenge = Encoding.ASCII.GetBytes("12345678");
 
                         var message3 = new AuthenticationMessageShell(token);
                         var hexExpectNtlmRes = message3.NtlmResponseData.BytesToHex();
 
+                        Log.Info($"Message 3 Flags: {message3.Flags}");
+                        Log.Info($"Message 3 UserName: {message3.UserName}");
+                        Log.Info($"Message 3 HostName: {message3.HostName}");
+                        Log.Info($"Message 3 TargetName: {message3.TargetName}");
+
                         if (message3.Message.NtlmResponseLength == 24)
                         {
-                            var hexNtlmRes = JavaResponses.GetNtlmResponse(password, challenge).BytesToHex();
+                            var hexNtlmRes = NtlmResponses.GetNtlmResponse(password, challenge).BytesToHex();
                             if (!hexExpectNtlmRes.Equals(hexNtlmRes, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 SendUnauthorized(Response);
@@ -91,7 +110,8 @@ namespace NtlmAuth
                             var expectBlob = message3.NtlmResponseData.NewCopy(16);
                             var hexExpectHmac = expectHmac.BytesToHex();
 
-                            var actualHmac = JavaResponses.GetNtlmV2ResponseHash(message3.TargetName, message3.UserName, password, expectBlob, challenge);
+                            var actualHmac = NtlmResponses.GetNtlmV2ResponseHash(
+                                message3.TargetName, userName, password, expectBlob, challenge);
                             var hexActualHmac = actualHmac.BytesToHex();
 
                             if (!hexExpectHmac.Equals(hexActualHmac, StringComparison.InvariantCultureIgnoreCase))
@@ -106,14 +126,6 @@ namespace NtlmAuth
                     SendUnauthorized(Response);
                 }
             }
-        }
-
-        public static byte[] StringToByteArray(string hex)
-        {
-            return Enumerable.Range(0, hex.Length)
-                             .Where(x => x % 2 == 0)
-                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-                             .ToArray();
         }
 
         private static void SendUnauthorized(HttpResponse response)

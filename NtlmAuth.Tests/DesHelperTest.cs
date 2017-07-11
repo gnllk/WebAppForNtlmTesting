@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace NtlmAuth.Tests
@@ -10,15 +11,12 @@ namespace NtlmAuth.Tests
         public void TestEncryptAndDecrypt()
         {
             var key = Encoding.ASCII.GetBytes("12345678");
-            var content = "12345678";
+            var content = Encoding.ASCII.GetBytes("12345678");
 
-            var cipheredData = DesHelper.Encrypt(Encoding.ASCII.GetBytes(content), key);
-
+            var cipheredData = DesHelper.Encrypt(content, key);
             var nonCipheredData = DesHelper.Decrypt(cipheredData, key);
 
-            var result = Encoding.ASCII.GetString(nonCipheredData);
-
-            Assert.AreEqual(result, content);
+            Assert.IsTrue(nonCipheredData.SequenceEqual(content));
         }
     }
 }

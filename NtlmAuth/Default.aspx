@@ -7,10 +7,10 @@
     <title>NTLM Auth Testing</title>
 </head>
 <body>
-    <form id="form1" runat="server">
-        <div>
-            <h1>Hello world!</h1>
-        </div>
-    </form>
+    <div>
+        <a href="Html/NTLM_Auth_Documents.html">
+            <h2>The NTLM Authentication Protocol and Security Support Provider</h2>
+        </a>
+    </div>
 </body>
 </html>

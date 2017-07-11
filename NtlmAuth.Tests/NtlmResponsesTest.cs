@@ -3,7 +3,7 @@
 namespace NtlmAuth.Tests
 {
     [TestClass]
-    public class JavaResponsesTest
+    public class NtlmResponsesTest
     {
         [TestMethod]
         public void TestGetLmResponse()
@@ -11,7 +11,7 @@ namespace NtlmAuth.Tests
             var hexLmExpectRes = "c337cd5cbd44fc9782a667af6d427c6de67c20c2d3e77c56";
             var password = "SecREt01";
             var challenge = "0123456789abcdef".HexToBytes();
-            var response = JavaResponses.GetLmResponse(password, challenge);
+            var response = NtlmResponses.GetLmResponse(password, challenge);
             var hexLmActualRes = response.BytesToHex().ToLowerInvariant();
 
             Assert.AreEqual(hexLmExpectRes, hexLmActualRes);
@@ -23,7 +23,7 @@ namespace NtlmAuth.Tests
             var hexLmExpectRes = "25a98c1c31e81847466b29b2df4680f39958fb8c213a9cc6";
             var password = "SecREt01";
             var challenge = "0123456789abcdef".HexToBytes();
-            var response = JavaResponses.GetNtlmResponse(password, challenge);
+            var response = NtlmResponses.GetNtlmResponse(password, challenge);
             var hexLmActualRes = response.BytesToHex().ToLowerInvariant();
 
             Assert.AreEqual(hexLmExpectRes, hexLmActualRes);
@@ -40,7 +40,7 @@ namespace NtlmAuth.Tests
             var challenge = "0123456789abcdef".HexToBytes();
             var clientNonce = "ffffff0011223344".HexToBytes();
             var timestamp = "0090d336b734c301".HexToBytes();
-            var response = JavaResponses.GetNtlmV2Response(target, userName, password,
+            var response = NtlmResponses.GetNtlmV2Response(target, userName, password,
                 targetInformation, challenge, clientNonce, timestamp);
 
             var hexActualRes = response.BytesToHex().ToLowerInvariant();

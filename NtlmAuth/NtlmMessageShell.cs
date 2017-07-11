@@ -152,6 +152,8 @@ namespace NtlmAuth
             set { TargetInfo.Type = value; }
         }
 
+        public MessageFlag Flags => Message.Flags;
+
         public Encoding GetEncoding()
         {
             return (Message.Flags & MessageFlag.NegotiateUnicode) > 0 ? Encoding.Unicode : Encoding.ASCII;
