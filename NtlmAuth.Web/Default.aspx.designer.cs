@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace NtlmAuth {
+namespace NtlmAuth.Web {
     
     
     public partial class Default {

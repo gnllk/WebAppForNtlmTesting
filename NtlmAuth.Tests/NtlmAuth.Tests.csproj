@@ -51,12 +51,13 @@
   </Choose>
   <ItemGroup>
     <Compile Include="DesHelperTest.cs" />
+    <Compile Include="HexHelperTest.cs" />
     <Compile Include="NtlmResponsesTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NtlmAuth\NtlmAuth.csproj">
-      <Project>{6dcd3856-289a-4cc2-b1e3-a6a1e8471484}</Project>
+      <Project>{9bf1953a-d192-482a-b674-3943e9436ba5}</Project>
       <Name>NtlmAuth</Name>
     </ProjectReference>
   </ItemGroup>
