@@ -1,0 +1,54 @@
+﻿GET /EWS/Service.asmx HTTP/1.1
+Accept: text/html, application/xhtml+xml, */*
+Accept-Language: zh-CN
+User-Agent: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)
+Accept-Encoding: gzip, deflate
+Host: autodiscover.king.com
+DNT: 1
+Connection: Keep-Alive
+
+HTTP/1.1 401 Unauthorized
+Content-Type: text/html
+Server: Microsoft-IIS/7.5
+WWW-Authenticate: NTLM
+X-Powered-By: ASP.NET
+Date: Thu, 13 Jul 2017 09:12:27 GMT
+Content-Length: 1293
+
+GET /EWS/Service.asmx HTTP/1.1
+Accept: text/html, application/xhtml+xml, */*
+Accept-Language: zh-CN
+User-Agent: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)
+Accept-Encoding: gzip, deflate
+Host: autodiscover.king.com
+Authorization: NTLM TlRMTVNTUAABAAAAB4IIogAAAAAAAAAAAAAAAAAAAAAGAvAjAAAADw==
+Connection: Keep-Alive
+DNT: 1
+
+HTTP/1.1 401 Unauthorized
+Content-Type: text/html; charset=us-ascii
+Server: Microsoft-HTTPAPI/2.0
+WWW-Authenticate: NTLM TlRMTVNTUAACAAAACAAIADgAAAAFgoqiNDsqUEfiH5QAAAAAAAAAAEAAQABAAAAABgGxHQAAAA9EAFAAQwAyAAIACABEAFAAQwAyAAEACABEAFAAQwAyAAQACABEAFAAQwAyAAMACABEAFAAQwAyAAcACADK7TsuuPvSAQAAAAA=
+Date: Thu, 13 Jul 2017 09:12:41 GMT
+Content-Length: 341
+
+GET /EWS/Service.asmx HTTP/1.1
+Accept: text/html, application/xhtml+xml, */*
+Accept-Language: zh-CN
+User-Agent: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)
+Accept-Encoding: gzip, deflate
+Host: autodiscover.king.com
+Authorization: NTLM TlRMTVNTUAADAAAAGAAYAIAAAADqAOoAmAAAAAYABgBYAAAAGgAaAF4AAAAIAAgAeAAAAAAAAACCAQAABYKIogYC8CMAAAAPsyUuXH4iBM3WR8qXl4iSZkwARQBPAEEAZABtAGkAbgBpAHMAdAByAGEAdABvAHIATABQAEMAMQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACc6JDjDlappZQyXfOifmWDAQEAAAAAAADK7TsuuPvSAeZKtohXEK4gAAAAAAIACABEAFAAQwAyAAEACABEAFAAQwAyAAQACABEAFAAQwAyAAMACABEAFAAQwAyAAcACADK7TsuuPvSAQYABAAGAAAACAAwADAAAAAAAAAAAAAAAAAwAAA046V6bZCIbNXFgAcnSiWirh3OxjYjNDwEkiay+DYhJQoAEAAAAAAAAAAAAAAAAAAAAAAACQAiAEgAVABUAFAALwBjAG0AbgAuAGsAaQBuAGcALgBjAG8AbQAAAAAAAAAAAAAAAAA=
+Connection: Keep-Alive
+DNT: 1
+
+HTTP/1.1 200 OK
+Cache-Control: private, max-age=0
+Content-Type: text/html; charset=utf-8
+Server: Microsoft-IIS/7.5
+X-AspNet-Version: 4.0.30319
+Persistent-Auth: true
+X-Powered-By: ASP.NET
+Date: Thu, 13 Jul 2017 09:12:41 GMT
+Content-Length: 12446
+

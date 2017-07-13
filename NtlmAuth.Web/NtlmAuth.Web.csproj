@@ -60,6 +60,7 @@
     <Reference Include="System.Web.Services" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="NTLM-Example.txt" />
     <Content Include="packages.config" />
     <None Include="Properties\PublishProfiles\ToFolder.pubxml" />
     <None Include="Web.Debug.config">
