@@ -3,10 +3,10 @@
 namespace NtlmAuth
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct NegotiationMessage
+    public struct NegotiationMessageStruct
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
-        public byte[] Protocol;
+        public byte[] Signature;
         public MessageType Type;
         public MessageFlag Flags;
 
@@ -25,7 +25,7 @@ namespace NtlmAuth
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct ChallengeMessage
+    public struct ChallengeMessageStruct
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
         public byte[] Protocol;
@@ -43,13 +43,13 @@ namespace NtlmAuth
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
         public byte[] Context;
 
-        public short TargetInfoLength;
-        public short TargetInfoSpace;
-        public int TargetInfoOffset;
+        public short TargetInfosLength;
+        public short TargetInfosSpace;
+        public int TargetInfosOffset;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct TargetInfo
+    public struct TargetInfoStruct
     {
         public TargetInfoType Type;
 
@@ -57,7 +57,7 @@ namespace NtlmAuth
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct AuthenticationMessage
+    public struct AuthenticationMessageStruct
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
         public byte[] Protocol;

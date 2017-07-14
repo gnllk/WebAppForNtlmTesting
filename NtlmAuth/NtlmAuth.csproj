@@ -35,12 +35,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArrayExtention.cs" />
-    <Compile Include="AspNtlmAuthExtention.cs" />
+    <Compile Include="AspNetNtlmAuthExtention.cs" />
+    <Compile Include="AuthenticationMessageShell.cs" />
+    <Compile Include="NtlmChallengeMessage.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="DesHelper.cs" />
     <Compile Include="HexHelper.cs" />
+    <Compile Include="INtlmMessage.cs" />
     <Compile Include="MD4.cs" />
+    <Compile Include="NtlmNegotiationMessage.cs" />
     <Compile Include="NtlmMessageEnum.cs" />
-    <Compile Include="NtlmMessageShell.cs" />
     <Compile Include="NtlmMessageStruct.cs" />
     <Compile Include="NtlmMessageStructExtention.cs" />
     <Compile Include="NtlmResponses.cs" />

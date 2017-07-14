@@ -181,20 +181,24 @@ namespace NtlmAuth
     public enum TargetInfoType : ushort
     {
         /// <summary>
+        /// Terminator subblock(Type: 0; Length: 0)
+        /// </summary>
+        Terminator = 0,
+        /// <summary>
         /// Server name
         /// </summary>
-        ServerName = 0x0100,
+        ServerName = 1,
         /// <summary>
         /// Domain name(i.e., domain)
         /// </summary>
-        DomainName = 0x0200,
+        DomainName = 2,
         /// <summary>
         /// Fully-qualified DNS host name (i.e., svr1.domain.com)
         /// </summary>
-        FullyQualifiedDomainName = 0x0300,
+        FullyQualifiedDomainName = 3,
         /// <summary>
         /// DNS domain name (i.e., domain.com)
         /// </summary>
-        DnsDomainName = 0x0400
+        DnsDomainName = 4
     }
 }

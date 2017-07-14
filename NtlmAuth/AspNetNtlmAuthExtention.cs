@@ -5,7 +5,7 @@ using System.Web;
 
 namespace NtlmAuth
 {
-    public static class AspNtlmAuthExtention
+    public static class AspNetNtlmAuthExtention
     {
         public const MessageFlag SupportedMessageFlag =
             MessageFlag.NegotiateUnicode |
@@ -31,30 +31,31 @@ namespace NtlmAuth
                     var token = Convert.FromBase64String(base64);
                     if (token[8] == 1)
                     {
-                        var message1 = new NegotiationMessageShell(token);
+                        var message1 = new NtlmNegotiationMessage(token);
 
                         log($"Message 1 Flags: {message1.Flags}");
                         log($"Message 1 Domain: {message1.Domain}");
                         log($"Message 1 Host: {message1.Host}");
 
-                        var challengeMessage = new ChallengeMessage
+                        message1.Message.Type = MessageType.Authentication;
+
+                        var challengeMessage = new ChallengeMessageStruct
                         {
                             Flags = SupportedMessageFlag & message1.Flags | MessageFlag.TargetTypeDomain,
                             Challenge = Encoding.ASCII.GetBytes("12345678"),
-                            Protocol = message1.Message.Protocol,
+                            Protocol = message1.Message.Signature,
                             Type = MessageType.Challenge
                         };
 
-                        var message2 = new ChallengeMessageShell(challengeMessage)
-                        {
-                            TargetName = "Test",
-                            TargetInfoDataContent = "Test",
-                            TargetInfoType = TargetInfoType.DomainName
-                        };
+                        var message2 = new NtlmChallengeMessage(challengeMessage, "Test",
+                            new TargetInfoShell(TargetInfoType.DomainName, "pc3", Encoding.Unicode),
+                            new TargetInfoShell(TargetInfoType.ServerName, "pc3", Encoding.Unicode),
+                            new TargetInfoShell(TargetInfoType.DnsDomainName, "pc3", Encoding.Unicode),
+                            new TargetInfoShell(TargetInfoType.FullyQualifiedDomainName, "pc3", Encoding.Unicode),
+                            new TargetInfoShell(TargetInfoType.Terminator));
 
                         log($"Message 2 Flags: {message2.Flags}");
                         log($"Message 2 TargetName: {message2.TargetName}");
-                        log($"Message 2 TargetInfo: {message2.TargetInfoDataContent}");
 
                         SendUnauthorized(context, message2.ToBytes());
                     }
