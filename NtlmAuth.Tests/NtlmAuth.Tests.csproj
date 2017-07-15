@@ -52,9 +52,11 @@
   <ItemGroup>
     <Compile Include="DesHelperTest.cs" />
     <Compile Include="HexHelperTest.cs" />
-    <Compile Include="NtlmMessageShellTest.cs" />
+    <Compile Include="NtlmChallengeMessageTest.cs" />
+    <Compile Include="NtlmMessageTest.cs" />
     <Compile Include="NtlmNegotiationMessageTest.cs" />
     <Compile Include="NtlmResponsesTest.cs" />
+    <Compile Include="NtlmTargetInfoListTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -16,13 +16,9 @@ namespace NtlmAuth
 
         public byte[] TargetNameBytes => GetEncoding().GetBytes(TargetName);
 
-        public TargetInfoShellList TargetInfoList { get; private set; } = new TargetInfoShellList();
+        public NtlmTargetInfoList TargetInfoList { get; private set; } = new NtlmTargetInfoList();
 
         public byte[] TargetInfosBytes => TargetInfoList.ToBytes();
-
-        public NtlmChallengeMessage()
-        {
-        }
 
         public NtlmChallengeMessage(byte[] messageBuffer)
         {
@@ -30,24 +26,18 @@ namespace NtlmAuth
         }
 
         public NtlmChallengeMessage(ChallengeMessageStruct message, string targetName,
-            params TargetInfoShell[] targetInfos)
+            params NtlmTargetInfo[] targetInfos)
         {
             Message = message;
             TargetName = targetName;
 
             if (targetInfos != null)
-                TargetInfoList = new TargetInfoShellList(targetInfos);
+                TargetInfoList = new NtlmTargetInfoList(targetInfos);
 
             Rectify();
         }
 
-        public NtlmChallengeMessage(ChallengeMessageStruct message, string targetName)
-            : this(message, targetName, null)
-        {
-
-        }
-
-        public string Signature => Encoding.ASCII.GetString(Message.Protocol);
+        public string Signature => Encoding.ASCII.GetString(Message.Signature);
 
         public MessageType Type => MessageType.Challenge;
 
@@ -79,17 +69,17 @@ namespace NtlmAuth
         public void Rectify()
         {
             // target name
-            var nameLength = TargetName?.Length ?? 0;
+            var nameLength = TargetNameBytes?.Length ?? 0;
             Message.TargetNameLength = (short)nameLength;
             Message.TargetNameSpace = (short)nameLength;
 
             // target info
             var targetInfosLength = TargetInfoList.Sum(item => item.TargetInfoTotalLength);
-            Message.TargetInfosLength = (short)(ChallengeMessageStructSize + targetInfosLength);
-            Message.TargetInfosSpace = (short)(ChallengeMessageStructSize + targetInfosLength);
+            Message.TargetInfosLength = (short)targetInfosLength;
+            Message.TargetInfosSpace = (short)targetInfosLength;
 
             // offset
-            Message.TargetNameOffset = ChallengeMessageStructSize;
+            Message.TargetNameOffset = StructSize;
             Message.TargetInfosOffset = Message.TargetNameOffset + Message.TargetNameLength;
         }
 
@@ -115,24 +105,39 @@ namespace NtlmAuth
             if (Message.TargetNameLength > 0)
             {
                 var targetInfosBytes = data.NewCopy(Message.TargetInfosOffset, Message.TargetInfosLength);
-                TargetInfoList = TargetInfoShellList.Parse(targetInfosBytes, GetEncoding());
+                TargetInfoList = NtlmTargetInfoList.Parse(targetInfosBytes, GetEncoding());
             }
+        }
+
+        public static NtlmChallengeMessage Parse(byte[] data)
+        {
+            return new NtlmChallengeMessage(data);
         }
     }
 
-    public class TargetInfoShell
+    public class NtlmTargetInfo
     {
-        public static readonly int StructSize = Marshal.SizeOf(typeof(TargetInfoStruct));
+        private byte[] _targetContentBytes;
 
-        public TargetInfoStruct TargetInfo;
+        public static readonly int TargetInfoStructSize = Marshal.SizeOf(typeof(TargetInfoStruct));
 
-        public int TargetInfoTotalLength => StructSize + TargetContentBytes?.Length ?? 0;
+        public TargetInfoStruct Info;
 
-        public byte[] TargetContentBytes { get; set; }
+        public int TargetInfoTotalLength => TargetInfoStructSize + Info.Length;
 
-        public TargetInfoType TargetInfoType => TargetInfo.Type;
+        public byte[] TargetContentBytes
+        {
+            get { return _targetContentBytes; }
+            set
+            {
+                _targetContentBytes = value;
+                Info.Length = (short)(value?.Length ?? 0);
+            }
+        }
 
-        public short TargetInfoLength => TargetInfo.Length;
+        public TargetInfoType TargetInfoType => Info.Type;
+
+        public short TargetInfoLength => Info.Length;
 
         public Encoding ContentEncoding { get; set; } = Encoding.Unicode;
 
@@ -145,73 +150,73 @@ namespace NtlmAuth
             }
         }
 
-        public TargetInfoShell()
+        public NtlmTargetInfo()
         {
         }
 
-        public TargetInfoShell(TargetInfoStruct targetInfo)
+        public NtlmTargetInfo(TargetInfoStruct targetInfo)
         {
-            TargetInfo = targetInfo;
+            Info = targetInfo;
         }
 
-        public TargetInfoShell(TargetInfoStruct targetInfo, byte[] targetContent, Encoding contentEncoding)
+        public NtlmTargetInfo(TargetInfoStruct targetInfo, byte[] targetContent, Encoding contentEncoding)
         {
             if (targetContent == null)
                 throw new ArgumentNullException(nameof(targetContent));
             if (contentEncoding == null)
                 throw new ArgumentNullException(nameof(contentEncoding));
 
-            TargetInfo = targetInfo;
+            Info = targetInfo;
             TargetContentBytes = targetContent;
             ContentEncoding = contentEncoding;
         }
 
-        public TargetInfoShell(TargetInfoStruct targetInfo, byte[] targetContent)
+        public NtlmTargetInfo(TargetInfoStruct targetInfo, byte[] targetContent)
           : this(targetInfo, targetContent, Encoding.Unicode)
         {
         }
 
-        public TargetInfoShell(TargetInfoType targetType, byte[] targetContent, Encoding contentEncoding)
+        public NtlmTargetInfo(TargetInfoType targetType, byte[] targetContent, Encoding contentEncoding)
             : this(new TargetInfoStruct { Type = targetType }, targetContent, contentEncoding)
         {
         }
 
-        public TargetInfoShell(TargetInfoType targetType, byte[] targetContent)
+        public NtlmTargetInfo(TargetInfoType targetType, byte[] targetContent)
             : this(targetType, targetContent, Encoding.Unicode)
         {
         }
 
-        public TargetInfoShell(TargetInfoType targetType, string targetContent, Encoding contentEncoding)
+        public NtlmTargetInfo(TargetInfoType targetType, string targetContent, Encoding contentEncoding)
             : this(targetType, contentEncoding.GetBytes(targetContent), contentEncoding)
         {
         }
 
-        public TargetInfoShell(TargetInfoType targetType)
+        public NtlmTargetInfo(TargetInfoType targetType)
         {
-            TargetInfo.Type = targetType;
+            Info.Type = targetType;
         }
 
-        public TargetInfoShell(TargetInfoStruct targetInfo, string targetContent, Encoding contentEncoding)
+        public NtlmTargetInfo(TargetInfoStruct targetInfo, string targetContent, Encoding contentEncoding)
                 : this(targetInfo, contentEncoding.GetBytes(targetContent), contentEncoding)
         {
         }
 
-        public TargetInfoShell(byte[] targetInfo, Encoding contentEncoding)
+        public NtlmTargetInfo(byte[] targetInfo, Encoding contentEncoding)
         {
             if (targetInfo == null)
                 throw new ArgumentNullException(nameof(targetInfo));
             if (contentEncoding == null)
                 throw new ArgumentNullException(nameof(contentEncoding));
 
-            TargetInfo = targetInfo.ToStruct<TargetInfoStruct>();
+            Info = targetInfo.ToStruct<TargetInfoStruct>();
 
-            if (targetInfo.Length > StructSize)
+            if (targetInfo.Length > TargetInfoStructSize)
             {
-                TargetContentBytes = targetInfo.NewCopy(StructSize, TargetInfo.Length);
+                TargetContentBytes = targetInfo.NewCopy(TargetInfoStructSize, Info.Length);
             }
         }
 
-        public TargetInfoShell(byte[] targetInfo)
+        public NtlmTargetInfo(byte[] targetInfo)
                 : this(targetInfo, Encoding.Unicode)
         {
         }
@@ -219,9 +224,9 @@ namespace NtlmAuth
         public byte[] ToBytes()
         {
             var contentLength = TargetContentBytes?.Length ?? 0;
-            var result = new List<byte>(StructSize + contentLength);
+            var result = new List<byte>(TargetInfoStructSize + contentLength);
 
-            result.AddRange(TargetInfo.ToBytes());
+            result.AddRange(Info.ToBytes());
 
             if (TargetContentBytes != null && contentLength > 0)
             {
@@ -236,28 +241,28 @@ namespace NtlmAuth
         }
     }
 
-    public class TargetInfoShellList : List<TargetInfoShell>
+    public class NtlmTargetInfoList : List<NtlmTargetInfo>
     {
-        public TargetInfoShellList()
+        public NtlmTargetInfoList()
         {
         }
 
-        public TargetInfoShellList(int capacity)
+        public NtlmTargetInfoList(int capacity)
             : base(capacity)
         {
         }
 
-        public TargetInfoShellList(params TargetInfoShell[] targetInfoShells)
+        public NtlmTargetInfoList(params NtlmTargetInfo[] targetInfoShells)
             : base(targetInfoShells)
         {
         }
 
-        public TargetInfoShellList(IEnumerable<TargetInfoShell> targetInfoShells)
+        public NtlmTargetInfoList(IEnumerable<NtlmTargetInfo> targetInfoShells)
             : base(targetInfoShells)
         {
         }
 
-        public TargetInfoShellList(byte[] tagetInfo, Encoding encoding)
+        public NtlmTargetInfoList(byte[] tagetInfo, Encoding encoding)
         {
             Fill(tagetInfo, encoding);
         }
@@ -283,16 +288,16 @@ namespace NtlmAuth
             var startIndex = 0;
             while (startIndex < tagetInfo.Length)
             {
-                var targetInfo = new TargetInfoShell(tagetInfo.NewCopy(startIndex), encoding);
+                var targetInfo = new NtlmTargetInfo(tagetInfo.NewCopy(startIndex), encoding);
                 Add(targetInfo);
                 startIndex += targetInfo.TargetInfoTotalLength;
-                if (targetInfo.TargetInfo.Type == TargetInfoType.Terminator) break;
+                if (targetInfo.Info.Type == TargetInfoType.Terminator) break;
             }
         }
 
-        public static TargetInfoShellList Parse(byte[] tagetInfo, Encoding encoding)
+        public static NtlmTargetInfoList Parse(byte[] tagetInfo, Encoding encoding)
         {
-            var result = new TargetInfoShellList();
+            var result = new NtlmTargetInfoList();
             result.Fill(tagetInfo, encoding);
             return result;
         }

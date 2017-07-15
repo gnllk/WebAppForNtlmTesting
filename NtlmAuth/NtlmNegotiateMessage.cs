@@ -5,13 +5,13 @@ using System.Text;
 
 namespace NtlmAuth
 {
-    public class NtlmNegotiationMessage : INtlmMessage
+    public class NtlmNegotiateMessage : INtlmMessage
     {
         public static readonly int NegotiationMessageStructSize = Marshal.SizeOf(typeof(NegotiationMessageStruct));
 
         public NegotiationMessageStruct Message;
 
-        public NtlmNegotiationMessage(NegotiationMessageStruct message, string domainName, string hostName)
+        public NtlmNegotiateMessage(NegotiationMessageStruct message, string domainName, string hostName)
         {
             Message = message;
             Domain = domainName;
@@ -20,7 +20,7 @@ namespace NtlmAuth
             Rectify();
         }
 
-        public NtlmNegotiationMessage(byte[] messageBuffer)
+        public NtlmNegotiateMessage(byte[] messageBuffer)
         {
             Fill(messageBuffer);
         }
@@ -91,9 +91,9 @@ namespace NtlmAuth
             Message.DomainNameOffset = Message.HostNameOffset + Message.HostNameLength;
         }
 
-        public static NtlmNegotiationMessage Parse(byte[] data)
+        public static NtlmNegotiateMessage Parse(byte[] data)
         {
-            return new NtlmNegotiationMessage(data);
+            return new NtlmNegotiateMessage(data);
         }
     }
 }

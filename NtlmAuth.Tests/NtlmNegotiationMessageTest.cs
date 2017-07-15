@@ -7,10 +7,10 @@ namespace NtlmAuth.Tests
     public class NtlmNegotiationMessageTest
     {
         [TestMethod]
-        public void TestNtlmNegotiationMessageParse()
+        public void TestParseNtlmNegotiationMessage()
         {
             const string originHex = "4e544c4d53535000010000000732000006000600330000000b000b0028000000050093080000000f574f524b53544154494f4e444f4d41494e";
-            var message1 = NtlmNegotiationMessage.Parse(originHex.HexToBytes());
+            var message1 = NtlmNegotiateMessage.Parse(originHex.HexToBytes());
 
             Assert.IsTrue(message1.Signature == Constants.Ntlmssp);
             Assert.IsTrue(message1.Type == MessageType.Negotiation);
@@ -42,7 +42,7 @@ namespace NtlmAuth.Tests
         }
 
         [TestMethod]
-        public void TestNtlmNegotiationMessageCreate()
+        public void TestCreateNtlmNegotiationMessage()
         {
             const string originHex = "4e544c4d53535000010000000732000006000600330000000b000b0028000000050093080000000f574f524b53544154494f4e444f4d41494e";
             var message1Struct = new NegotiationMessageStruct
@@ -61,7 +61,7 @@ namespace NtlmAuth.Tests
                 OsReserved = 251658240
             };
 
-            var message1 = new NtlmNegotiationMessage(message1Struct, "DOMAIN", "WORKSTATION");
+            var message1 = new NtlmNegotiateMessage(message1Struct, "DOMAIN", "WORKSTATION");
 
             Assert.IsTrue(message1.Signature == Constants.Ntlmssp);
             Assert.IsTrue(message1.Type == MessageType.Negotiation);

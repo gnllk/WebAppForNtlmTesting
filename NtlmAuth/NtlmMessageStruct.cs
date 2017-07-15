@@ -28,7 +28,7 @@ namespace NtlmAuth
     public struct ChallengeMessageStruct
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
-        public byte[] Protocol;
+        public byte[] Signature;
         public MessageType Type;
 
         public short TargetNameLength;

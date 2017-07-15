@@ -3,7 +3,7 @@ using System.Text;
 
 namespace NtlmAuth
 {
-    public class AuthenticationMessageShell : INtlmMessage
+    public class NtlmAuthenticationMessage : INtlmMessage
     {
         private readonly AuthenticationMessageStruct _message;
 
@@ -11,12 +11,12 @@ namespace NtlmAuth
 
         public AuthenticationMessageStruct Message => _message;
 
-        public AuthenticationMessageShell(byte[] messageBuffer)
+        public NtlmAuthenticationMessage(byte[] messageBuffer)
             : this(messageBuffer, messageBuffer.ToStruct<AuthenticationMessageStruct>())
         {
         }
 
-        public AuthenticationMessageShell(byte[] messageBuffer, AuthenticationMessageStruct message)
+        public NtlmAuthenticationMessage(byte[] messageBuffer, AuthenticationMessageStruct message)
         {
             _message = message;
             _messageBuffer = messageBuffer;
