@@ -11,11 +11,14 @@ namespace NtlmAuth
             if (data.Length == 0)
                 throw new ArgumentException($"{nameof(data)} was empty");
 
-            if (startIndex < 0 || startIndex >= data.Length)
-                throw new ArgumentOutOfRangeException($"{nameof(startIndex)} was out of range [0,{data.Length})");
+            if (startIndex < 0)
+                length = 0;
 
             if (length > data.Length - startIndex || length < 0)
                 length = data.Length - startIndex;
+
+            if (length == 0 || startIndex >= data.Length)
+                return new byte[0];
 
             var temp = new byte[length];
             Array.Copy(data, startIndex, temp, 0, length);

@@ -11,6 +11,16 @@ namespace NtlmAuth
 
         public NegotiationMessageStruct Message;
 
+        private void BuildMessage(byte[] data)
+        {
+            Fill(data);
+        }
+
+        public NtlmNegotiateMessage(byte[] messageBuffer)
+        {
+            BuildMessage(messageBuffer);
+        }
+
         public NtlmNegotiateMessage(NegotiationMessageStruct message, string domainName, string hostName)
         {
             Message = message;
@@ -18,11 +28,6 @@ namespace NtlmAuth
             Host = hostName;
 
             Rectify();
-        }
-
-        public NtlmNegotiateMessage(byte[] messageBuffer)
-        {
-            Fill(messageBuffer);
         }
 
         public string Signature => Encoding.ASCII.GetString(Message.Signature);
@@ -37,7 +42,7 @@ namespace NtlmAuth
 
         public string Host { get; private set; }
 
-        public byte[] ToBytes()
+        public virtual byte[] ToBytes()
         {
             var data = Message.ToBytes();
             var result = new List<byte>(data);
@@ -52,11 +57,6 @@ namespace NtlmAuth
         }
 
         public void Fill(byte[] data)
-        {
-            OnFill(data);
-        }
-
-        protected virtual void OnFill(byte[] data)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -77,7 +77,7 @@ namespace NtlmAuth
             }
         }
 
-        protected void Rectify()
+        public void Rectify()
         {
             var hostLength = Host?.Length ?? 0;
             Message.HostNameLength = (short)hostLength;

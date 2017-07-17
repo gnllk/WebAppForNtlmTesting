@@ -13,5 +13,7 @@
         byte[] ToBytes();
 
         void Fill(byte[] data);
+
+        void Rectify();
     }
 }

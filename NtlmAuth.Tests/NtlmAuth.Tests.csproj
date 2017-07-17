@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="DesHelperTest.cs" />
     <Compile Include="HexHelperTest.cs" />
+    <Compile Include="NtlmAuthenticationMessageTest.cs" />
     <Compile Include="NtlmChallengeMessageTest.cs" />
     <Compile Include="NtlmMessageTest.cs" />
     <Compile Include="NtlmNegotiationMessageTest.cs" />

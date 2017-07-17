@@ -47,7 +47,7 @@ namespace NtlmAuth.Tests
             Assert.IsTrue(info[2].TargetInfoType == TargetInfoType.DnsDomainName);
             Assert.IsTrue(info[2].TargetContent == "domain.com");
 
-            Assert.IsTrue(info[3].TargetInfoType == TargetInfoType.FullyQualifiedDomainName);
+            Assert.IsTrue(info[3].TargetInfoType == TargetInfoType.FQDN);
             Assert.IsTrue(info[3].TargetContent == "server.domain.com");
 
             Assert.IsTrue(info[4].TargetInfoType == TargetInfoType.Terminator);
@@ -77,7 +77,7 @@ namespace NtlmAuth.Tests
             message.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.DomainName, "DOMAIN", Encoding.Unicode));
             message.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.ServerName, "SERVER", Encoding.Unicode));
             message.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.DnsDomainName, "domain.com", Encoding.Unicode));
-            message.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.FullyQualifiedDomainName, "server.domain.com", Encoding.Unicode));
+            message.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.FQDN, "server.domain.com", Encoding.Unicode));
             message.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.Terminator));
 
             message.Rectify();
@@ -116,7 +116,7 @@ namespace NtlmAuth.Tests
             Assert.IsTrue(info[2].TargetInfoType == TargetInfoType.DnsDomainName);
             Assert.IsTrue(info[2].TargetContent == "domain.com");
 
-            Assert.IsTrue(info[3].TargetInfoType == TargetInfoType.FullyQualifiedDomainName);
+            Assert.IsTrue(info[3].TargetInfoType == TargetInfoType.FQDN);
             Assert.IsTrue(info[3].TargetContent == "server.domain.com");
 
             Assert.IsTrue(info[4].TargetInfoType == TargetInfoType.Terminator);

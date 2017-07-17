@@ -3,6 +3,14 @@
 namespace NtlmAuth
 {
     [StructLayout(LayoutKind.Sequential)]
+    public struct MessageHeaderStruct
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public byte[] Signature;
+        public MessageType Type;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct NegotiationMessageStruct
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
@@ -60,7 +68,7 @@ namespace NtlmAuth
     public struct AuthenticationMessageStruct
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
-        public byte[] Protocol;
+        public byte[] Signature;
         public MessageType Type;
 
         public short LmResponseLength;
@@ -73,7 +81,7 @@ namespace NtlmAuth
 
         public short TargetNameLength;
         public short TargetNameSpace;
-        public int TargetNametOffset;
+        public int TargetNameOffset;
 
         public short UserNameLength;
         public short UserNameSpace;
@@ -89,9 +97,9 @@ namespace NtlmAuth
 
         public MessageFlag Flags;
 
-        public byte OsMajorVersion;
-        public byte OsMinorVersion;
-        public short OsBuildNumber;
-        public int OsReserved;
+        //public byte OsMajorVersion;
+        //public byte OsMinorVersion;
+        //public short OsBuildNumber;
+        //public int OsReserved;
     }
 }

@@ -15,111 +15,146 @@ namespace NtlmAuth
             MessageFlag.NegotiateAlwaysSign |
             MessageFlag.RequestTarget;
 
+        private static readonly byte[] Challenge = "0123456789abcdef".HexToBytes();
+
+        private static readonly byte[] ZeroBytes = "0000000000000000".HexToBytes();
+
         public static void CheckNtlmAuth(this HttpContext context, string userName, string password, Action<string> log)
         {
-            var request = context.Request;
-            var auth = request.Headers["Authorization"];
+            var auth = context.Request.Headers["Authorization"];
 
-            if (string.IsNullOrWhiteSpace(auth))
+            if (string.IsNullOrWhiteSpace(auth) || !auth.StartsWith("NTLM"))
             {
                 SendUnauthorized(context);
             }
             else
             {
-                if (auth.StartsWith("NTLM"))
+                var base64 = auth.Substring(5); //skip "NTLM "
+                var token = Convert.FromBase64String(base64);
+                var header = token.ToStruct<MessageHeaderStruct>();
+
+                switch (header.Type)
                 {
-                    var base64 = auth.Substring(5);
-                    var token = Convert.FromBase64String(base64);
-                    if (token[8] == 1)
-                    {
-                        var message1 = new NtlmNegotiateMessage(token);
-
-                        log($"Message 1 Flags: {message1.Flags}");
-                        log($"Message 1 Domain: {message1.Domain}");
-                        log($"Message 1 Host: {message1.Host}");
-
-                        var messageStruct = new ChallengeMessageStruct
-                        {
-                            Signature = Constants.NtlmsspBytes,
-                            Type = MessageType.Challenge,
-                            Flags = MessageFlag.NegotiateUnicode
-                                | MessageFlag.NegotiateNtlm
-                                | MessageFlag.TargetTypeDomain
-                                | MessageFlag.NegotiateTargetInfo,
-                            Challenge = HexHelper.HexToBytes("0123456789abcdef"),
-                            Context = HexHelper.HexToBytes("0000000000000000")
-                        };
-                        var message2 = new NtlmChallengeMessage(messageStruct, "DOMAIN");
-                        message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.DomainName, "DOMAIN", Encoding.Unicode));
-                        message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.ServerName, "SERVER", Encoding.Unicode));
-                        message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.DnsDomainName, "domain.com", Encoding.Unicode));
-                        message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.FullyQualifiedDomainName, "server.domain.com", Encoding.Unicode));
-                        message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.Terminator));
-                        message2.Rectify();
-
-                        log($"Message 2 Flags: {message2.Flags}");
-                        log($"Message 2 TargetName: {message2.TargetName}");
-
-                        SendUnauthorized(context, message2.ToBytes());
-                    }
-                    else if (token[8] == 3)
-                    {
-                        var challenge = HexHelper.HexToBytes("0123456789abcdef");
-
+                    case MessageType.Negotiation:
+                        var message1 = NtlmNegotiateMessage.Parse(token);
+                        SendChallengeMessage(context, message1, log);
+                        break;
+                    case MessageType.Authentication:
                         var message3 = new NtlmAuthenticationMessage(token);
-                        var hexExpectNtlmRes = message3.NtlmResponseData.BytesToHex();
-
-                        log($"Message 3 Flags: {message3.Flags}");
-                        log($"Message 3 UserName: {message3.UserName}");
-                        log($"Message 3 HostName: {message3.HostName}");
-                        log($"Message 3 TargetName: {message3.TargetName}");
-
-                        if (message3.UserName.Equals(userName))
-                        {
-                            if (message3.Message.NtlmResponseLength == 24)
-                            {
-                                var hexNtlmRes = NtlmResponses.GetNtlmResponse(password, challenge).BytesToHex();
-                                if (!hexExpectNtlmRes.Equals(hexNtlmRes, StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    SendUnauthorized(context);
-                                }
-                            }
-                            else
-                            {
-                                var expectHmac = message3.NtlmResponseData.NewCopy(0, 16);
-                                var expectBlob = message3.NtlmResponseData.NewCopy(16);
-                                var hexExpectHmac = expectHmac.BytesToHex();
-
-                                var actualHmac = NtlmResponses.GetNtlmV2ResponseHash(
-                                    message3.TargetName, userName, password, expectBlob, challenge);
-                                var hexActualHmac = actualHmac.BytesToHex();
-
-                                if (!hexExpectHmac.Equals(hexActualHmac, StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    SendUnauthorized(context);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            SendUnauthorized(context);
-                        }
-                    }
-                }
-                else
-                {
-                    SendUnauthorized(context);
+                        ValidateAuthMessage(context, userName, password, message3, log);
+                        break;
+                    default:
+                        SendUnauthorized(context);
+                        break;
                 }
             }
         }
 
+        private static void ValidateAuthMessage(HttpContext context, string userName, string password,
+            NtlmAuthenticationMessage authMessage, Action<string> log)
+        {
+            log($"Message 3 Flags: {authMessage.Flags}");
+            log($"Message 3 UserName: {authMessage.UserName}");
+            log($"Message 3 HostName: {authMessage.HostName}");
+            log($"Message 3 TargetName: {authMessage.TargetName}");
+
+            if (authMessage.UserName.Equals(userName, StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (authMessage.Message.NtlmResponseLength == 24)
+                {
+                    ValidateNtlmResponse(context, password, authMessage, Challenge);
+                }
+                else
+                {
+                    ValidateNtlmV2Response(context, userName, password, authMessage, Challenge);
+                }
+            }
+            else
+            {
+                SendUnauthorized(context);
+            }
+        }
+
+        private static void ValidateNtlmV2Response(HttpContext context, string userName, string password,
+            NtlmAuthenticationMessage authMessage, byte[] challenge)
+        {
+            var expectHmac = authMessage.NtlmResponseData.NewCopy(0, 16);
+            var expectBlob = authMessage.NtlmResponseData.NewCopy(16);
+            var hexExpectHmac = expectHmac.BytesToHex();
+
+            var actualHmac = NtlmResponses.GetNtlmV2ResponseHash(
+                authMessage.TargetName, userName, password, expectBlob, challenge);
+            var hexActualHmac = actualHmac.BytesToHex();
+
+            if (!hexExpectHmac.Equals(hexActualHmac, StringComparison.InvariantCultureIgnoreCase))
+            {
+                SendUnauthorized(context);
+            }
+        }
+
+        private static void ValidateNtlmResponse(HttpContext context, string password,
+            NtlmAuthenticationMessage authMessage, byte[] challenge)
+        {
+            var hexExpectNtlmRes = authMessage.NtlmResponseData.BytesToHex();
+            var hexNtlmRes = NtlmResponses.GetNtlmResponse(password, challenge).BytesToHex();
+            if (!hexExpectNtlmRes.Equals(hexNtlmRes, StringComparison.InvariantCultureIgnoreCase))
+            {
+                SendUnauthorized(context);
+            }
+        }
+
+        private static void SendChallengeMessage(HttpContext context, NtlmNegotiateMessage negotiateMessage,
+            Action<string> log)
+        {
+            if (negotiateMessage == null)
+                throw new ArgumentNullException(nameof(negotiateMessage));
+
+            if (log != null)
+            {
+                log($"Message 1 Flags: {negotiateMessage.Flags}");
+                log($"Message 1 Domain: {negotiateMessage.Domain}");
+                log($"Message 1 Host: {negotiateMessage.Host}");
+            }
+
+            var messageStruct = new ChallengeMessageStruct
+            {
+                Signature = Constants.NtlmsspBytes,
+                Type = MessageType.Challenge,
+                Flags = SupportedMessageFlag & negotiateMessage.Flags,
+                Challenge = Challenge,
+                Context = ZeroBytes
+            };
+
+            var message2 = new NtlmChallengeMessage(messageStruct, "DOMAIN");
+            message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.DomainName, "DOMAIN", Encoding.Unicode));
+            message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.ServerName, "SERVER", Encoding.Unicode));
+            message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.DnsDomainName, "domain.com", Encoding.Unicode));
+            message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.FQDN, "server.domain.com", Encoding.Unicode));
+            message2.TargetInfoList.Add(new NtlmTargetInfo(TargetInfoType.Terminator));
+            message2.Rectify();
+
+            if (log != null)
+            {
+                log($"Message 2 Flags: {message2.Flags}");
+                log($"Message 2 TargetName: {message2.TargetName}");
+            }
+
+            SendUnauthorized(context, message2.ToBytes());
+        }
+
         private static void SendUnauthorized(HttpContext context, byte[] messageBytes = null)
         {
-            var base64 = messageBytes == null ? string.Empty : $" {Convert.ToBase64String(messageBytes)}";
             context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             context.Response.ContentType = "text/html";
             context.Response.CacheControl = "no-cache";
-            context.Response.Headers.Add("WWW-Authenticate", "NTLM" + base64);
+            if (messageBytes == null || messageBytes.Length == 0)
+            {
+                context.Response.Headers.Add("WWW-Authenticate", "NTLM");
+            }
+            else
+            {
+                context.Response.Headers.Add("WWW-Authenticate", $"NTLM {Convert.ToBase64String(messageBytes)}");
+            }
             context.Response.Write(Encoding.ASCII.GetBytes("Unauthorized"));
             context.ApplicationInstance.CompleteRequest();
         }

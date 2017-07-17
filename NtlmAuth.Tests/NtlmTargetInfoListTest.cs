@@ -23,7 +23,7 @@ namespace NtlmAuth.Tests
             Assert.IsTrue(info[2].TargetInfoType == TargetInfoType.DnsDomainName);
             Assert.IsTrue(info[2].TargetContent == "domain.com");
 
-            Assert.IsTrue(info[3].TargetInfoType == TargetInfoType.FullyQualifiedDomainName);
+            Assert.IsTrue(info[3].TargetInfoType == TargetInfoType.FQDN);
             Assert.IsTrue(info[3].TargetContent == "server.domain.com");
 
             Assert.IsTrue(info[4].TargetInfoType == TargetInfoType.Terminator);

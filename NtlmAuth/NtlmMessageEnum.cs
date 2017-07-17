@@ -195,7 +195,7 @@ namespace NtlmAuth
         /// <summary>
         /// Fully-qualified DNS host name (i.e., svr1.domain.com)
         /// </summary>
-        FullyQualifiedDomainName = 3,
+        FQDN = 3,
         /// <summary>
         /// DNS domain name (i.e., domain.com)
         /// </summary>

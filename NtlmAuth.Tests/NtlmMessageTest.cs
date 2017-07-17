@@ -11,6 +11,8 @@ namespace NtlmAuth.Tests
         {
             var data = Convert.FromBase64String("TlRMTVNTUAABAAAAB4IIogAAAAAAAAAAAAAAAAAAAAAGAvAjAAAADw==");
             var message = new NtlmNegotiateMessage(data);
+
+            Assert.IsTrue(message.Type == MessageType.Negotiation);
         }
 
         [TestMethod]
@@ -18,6 +20,8 @@ namespace NtlmAuth.Tests
         {
             var data = Convert.FromBase64String("TlRMTVNTUAACAAAACAAIADgAAAAFgoqiNDsqUEfiH5QAAAAAAAAAAEAAQABAAAAABgGxHQAAAA9EAFAAQwAyAAIACABEAFAAQwAyAAEACABEAFAAQwAyAAQACABEAFAAQwAyAAMACABEAFAAQwAyAAcACADK7TsuuPvSAQAAAAA=");
             var message = new NtlmChallengeMessage(data);
+
+            Assert.IsTrue(message.Type == MessageType.Challenge);
         }
 
         [TestMethod]
@@ -25,6 +29,8 @@ namespace NtlmAuth.Tests
         {
             var data = Convert.FromBase64String("TlRMTVNTUAADAAAAGAAYAIAAAADqAOoAmAAAAAYABgBYAAAAGgAaAF4AAAAIAAgAeAAAAAAAAACCAQAABYKIogYC8CMAAAAPsyUuXH4iBM3WR8qXl4iSZkwARQBPAEEAZABtAGkAbgBpAHMAdAByAGEAdABvAHIATABQAEMAMQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACc6JDjDlappZQyXfOifmWDAQEAAAAAAADK7TsuuPvSAeZKtohXEK4gAAAAAAIACABEAFAAQwAyAAEACABEAFAAQwAyAAQACABEAFAAQwAyAAMACABEAFAAQwAyAAcACADK7TsuuPvSAQYABAAGAAAACAAwADAAAAAAAAAAAAAAAAAwAAA046V6bZCIbNXFgAcnSiWirh3OxjYjNDwEkiay+DYhJQoAEAAAAAAAAAAAAAAAAAAAAAAACQAiAEgAVABUAFAALwBjAG0AbgAuAGsAaQBuAGcALgBjAG8AbQAAAAAAAAAAAAAAAAA=");
             var message = new NtlmAuthenticationMessage(data);
+
+            Assert.IsTrue(message.Type == MessageType.Authentication);
         }
     }
 }

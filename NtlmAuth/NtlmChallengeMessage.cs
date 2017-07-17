@@ -20,9 +20,14 @@ namespace NtlmAuth
 
         public byte[] TargetInfosBytes => TargetInfoList.ToBytes();
 
+        private void BuildMessage(byte[] data)
+        {
+            Fill(data);
+        }
+
         public NtlmChallengeMessage(byte[] messageBuffer)
         {
-            Fill(messageBuffer);
+            BuildMessage(messageBuffer);
         }
 
         public NtlmChallengeMessage(ChallengeMessageStruct message, string targetName,
@@ -50,7 +55,7 @@ namespace NtlmAuth
             return (Message.Flags & MessageFlag.NegotiateUnicode) > 0 ? Encoding.Unicode : Encoding.ASCII;
         }
 
-        public byte[] ToBytes()
+        public virtual byte[] ToBytes()
         {
             Rectify();
 
@@ -66,29 +71,7 @@ namespace NtlmAuth
             return result.ToArray();
         }
 
-        public void Rectify()
-        {
-            // target name
-            var nameLength = TargetNameBytes?.Length ?? 0;
-            Message.TargetNameLength = (short)nameLength;
-            Message.TargetNameSpace = (short)nameLength;
-
-            // target info
-            var targetInfosLength = TargetInfoList.Sum(item => item.TargetInfoTotalLength);
-            Message.TargetInfosLength = (short)targetInfosLength;
-            Message.TargetInfosSpace = (short)targetInfosLength;
-
-            // offset
-            Message.TargetNameOffset = StructSize;
-            Message.TargetInfosOffset = Message.TargetNameOffset + Message.TargetNameLength;
-        }
-
-        public void Fill(byte[] data)
-        {
-            OnFill(data);
-        }
-
-        protected virtual void OnFill(byte[] data)
+        public virtual void Fill(byte[] data)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -107,6 +90,23 @@ namespace NtlmAuth
                 var targetInfosBytes = data.NewCopy(Message.TargetInfosOffset, Message.TargetInfosLength);
                 TargetInfoList = NtlmTargetInfoList.Parse(targetInfosBytes, GetEncoding());
             }
+        }
+
+        public void Rectify()
+        {
+            // target name
+            var nameLength = TargetNameBytes?.Length ?? 0;
+            Message.TargetNameLength = (short)nameLength;
+            Message.TargetNameSpace = (short)nameLength;
+
+            // target info
+            var targetInfosLength = TargetInfoList.Sum(item => item.TargetInfoTotalLength);
+            Message.TargetInfosLength = (short)targetInfosLength;
+            Message.TargetInfosSpace = (short)targetInfosLength;
+
+            // offset
+            Message.TargetNameOffset = StructSize;
+            Message.TargetInfosOffset = Message.TargetNameOffset + Message.TargetNameLength;
         }
 
         public static NtlmChallengeMessage Parse(byte[] data)
