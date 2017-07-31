@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using System.Web;
@@ -7,6 +8,8 @@ namespace NtlmAuth
 {
     public static class AspNetNtlmAuthExtention
     {
+        private readonly static Dictionary<string, bool> IsLogonTable = new Dictionary<string, bool>();
+
         public const MessageFlag SupportedMessageFlag =
             MessageFlag.NegotiateUnicode |
             MessageFlag.NegotiateNtlm |
@@ -21,8 +24,11 @@ namespace NtlmAuth
 
         public static void CheckNtlmAuth(this HttpContext context, string userName, string password, Action<string> log)
         {
-            var auth = context.Request.Headers["Authorization"];
+            MakeIdentity(context);
 
+            if (CheckLogon(context)) return;
+
+            var auth = context.Request.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(auth) || !auth.StartsWith("NTLM"))
             {
                 SendUnauthorized(context);
@@ -90,6 +96,10 @@ namespace NtlmAuth
             {
                 SendUnauthorized(context);
             }
+            else
+            {
+                MarkAsLogon(context);
+            }
         }
 
         private static void ValidateNtlmResponse(HttpContext context, string password,
@@ -100,6 +110,10 @@ namespace NtlmAuth
             if (!hexExpectNtlmRes.Equals(hexNtlmRes, StringComparison.InvariantCultureIgnoreCase))
             {
                 SendUnauthorized(context);
+            }
+            else
+            {
+                MarkAsLogon(context);
             }
         }
 
@@ -157,6 +171,34 @@ namespace NtlmAuth
             }
             context.Response.Write(Encoding.ASCII.GetBytes("Unauthorized"));
             context.ApplicationInstance.CompleteRequest();
+        }
+
+        private static void MarkAsLogon(HttpContext context)
+        {
+            if (context.Request.Cookies.Get("identity") == null)
+                return;
+            var id = context.Request.Cookies.Get("identity").Value.ToString();
+            IsLogonTable[id] = true;
+        }
+
+        private static bool CheckLogon(HttpContext context)
+        {
+            if (context.Request.Cookies.Get("identity") == null)
+                return false;
+            var id = context.Request.Cookies.Get("identity").Value.ToString();
+            return IsLogonTable.ContainsKey(id) && IsLogonTable[id];
+        }
+
+        private static void MakeIdentity(HttpContext context)
+        {
+            // this is dangerous key
+            if (context.Request.Cookies.Get("identity") == null)
+            {
+                var identity = Guid.NewGuid().ToString();
+                var cookie = new HttpCookie("identity", identity);
+                cookie.Expires = DateTime.Now.AddMinutes(3);
+                context.Response.Cookies.Add(cookie);
+            }
         }
     }
 }
